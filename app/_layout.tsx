@@ -1,39 +1,74 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
+import React, { useEffect } from 'react';
+import { View, Text, ActivityIndicator } from 'react-native';
+import { Slot, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import { AuthProvider, useAuth } from '../hooks/useAuth';
+import Colors from '../constants/Colors';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-// Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
-
+// Root layout component wrapped with AuthProvider
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+  return (
+    <AuthProvider>
+      <StatusBar style="auto" />
+      <RootLayoutNav />
+    </AuthProvider>
+  );
+}
 
+// Auth navigation wrapper component
+function RootLayoutNav() {
+  // Correctly use the useAuth hook by destructuring its return value
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+  const segments = useSegments();
+
+  // Handle auth state changes and route accordingly
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+    if (isLoading) return;
 
-  if (!loaded) {
-    return null;
+    const inAuthGroup = segments[0] === '(auth)';
+
+    // Check if user is signed in and route accordingly
+    if (user) {
+      // If user is signed in and on an auth screen, redirect to appropriate home
+      // Note: We've excluded therapist-application here to allow navigation to therapist home from the application
+      if (segments.includes('index') || segments.includes('create-account') || 
+          segments.includes('client-signup') || segments.includes('partner-application')) {
+        
+        // Route based on user role
+        if (user.role === 'client') {
+          router.replace('/client/home');
+        } else if (user.role === 'therapist') {
+          router.replace('/therapist/home');
+        } else if (user.role === 'partner') {
+          router.replace('/partner/home');
+        } else {
+          // Default fallback
+          router.replace('/client/home');
+        }
+      }
+    } else {
+      // If user is not signed in and not on an auth screen, redirect to sign in
+      if (
+        segments.includes('client/home') || 
+        segments.includes('therapist/home') || 
+        segments.includes('partner/home')
+      ) {
+        router.replace('/');
+      }
+    }
+  }, [user, isLoading, segments]);
+
+  // Show loading spinner while authentication state is being determined
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background }}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text style={{ marginTop: 16, color: Colors.text, fontSize: 16 }}>Loading...</Text>
+      </View>
+    );
   }
 
-  return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
-  );
+  // Render the current screen
+  return <Slot />;
 }

@@ -1,50 +1,76 @@
-# Welcome to your Expo app 👋
+# Therapi App - Skeleton Implementation
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This is a skeleton implementation of the Therapi app, a platform connecting clients with therapists built with Expo Router and React Native.
 
-## Get started
+## Getting Started
 
-1. Install dependencies
-
-   ```bash
+1. Make sure you have Node.js, npm, and Expo CLI installed
+2. Clone the repository
+3. Install the dependencies:
+   ```
    npm install
    ```
-
-2. Start the app
-
-   ```bash
-    npx expo start
+4. Start the development server:
+   ```
+   npm start
    ```
 
-In the output, you'll find options to open the app in a
+## App Structure
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+The app is organized as follows:
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+- `app/` - Contains all the screens and routes using Expo Router
+  - `index.tsx` - Main login screen
+  - `create-account.tsx` - Account type selection screen
+  - `client-signup.tsx` - Client account creation
+  - `therapist-application/` - Therapist application process
+  - `partner-application/` - Partner business application process
+  - `client/`, `therapist/`, `partner/` - Role-specific screens
 
-## Get a fresh project
+- `components/` - Reusable UI components
+- `constants/` - App-wide constants like colors
+- `hooks/` - Custom React hooks (e.g., authentication)
+- `assets/` - Images, fonts, and other static assets
 
-When you're ready, run:
+## Future Implementation Notes
 
-```bash
-npm run reset-project
-```
+This skeleton app includes placeholders for the following advanced features:
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Authentication & Security
 
-## Learn more
+- FaceID/TouchID integration should be implemented using Expo's Local Authentication API.
+- User authentication should use JWT or OAuth 2.0 with secure token storage in AsyncStorage or SecureStore.
+- Password hashing and security best practices should be implemented on the backend.
 
-To learn more about developing your project with Expo, look at the following resources:
+### Backend Integration
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- Set up a proper authentication backend (Firebase, AWS Amplify, or custom server).
+- Implement real-time notifications using Firebase Cloud Messaging or similar.
+- Create API services for all data operations.
 
-## Join the community
+### Data Storage
 
-Join our community of developers creating universal apps.
+- Use a database like Firebase Firestore, MongoDB, or PostgreSQL for user data.
+- Implement proper data validation on both client and server sides.
+- Add caching strategies for better offline experience.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### UI Enhancements
+
+- Implement proper form validation with visual feedback.
+- Add proper date pickers for date fields.
+- Add profile image upload and management.
+- Implement proper dropdown selectors for therapy types.
+
+### Advanced Features
+
+- Implement a matching algorithm for therapists and clients.
+- Add scheduling system with calendar integration.
+- Add payment processing integration.
+- Implement rating and review system.
+- Add in-app messaging between therapists and clients.
+
+## Additional Resources
+
+- Expo Documentation: [https://docs.expo.dev/](https://docs.expo.dev/)
+- React Native Documentation: [https://reactnative.dev/docs/getting-started](https://reactnative.dev/docs/getting-started)
+- Expo Router Documentation: [https://docs.expo.dev/router/introduction/](https://docs.expo.dev/router/introduction/)
