@@ -45,7 +45,7 @@ const TherapistApplicationStep3: React.FC = () => {
             <View style={styles.infoItem}>
               <Text style={styles.infoNumber}>3</Text>
               <Text style={styles.infoText}>
-                You will be notified of the decision via email. You can also check your application status by logging in to your account.
+                You will be notified of the decision through email. You can also check your application status by logging in to your account.
               </Text>
             </View>
           </View>

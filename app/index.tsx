@@ -21,30 +21,35 @@ const LoginScreen: React.FC = () => {
       setError('Please fill in all fields');
       return;
     }
-
+  
     setError('');
     setIsLoading(true);
-
+  
     try {
       await signIn(email, password);
-      
       // Navigation will be handled by the auth state change in _layout.tsx
-      // This is just a placeholder for now
-      
-      /* 
-      TODO: Implement Face ID authentication option
-      if (useFaceId) {
-        // Save credentials for Face ID
-        await saveFaceIdCredentials(email, password);
+    } catch (error: any) {
+      // Handle specific Firebase error codes
+      const errorCode = error.code;
+      switch (errorCode) {
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+          setError('Invalid email or password');
+          break;
+        case 'auth/invalid-email':
+          setError('Invalid email address');
+          break;
+        case 'auth/too-many-requests':
+          setError('Too many failed login attempts. Please try again later');
+          break;
+        default:
+          setError('An error occurred during login. Please try again');
+          console.error('Login error:', error);
       }
-      */
-    } catch (error) {
-      setError('Invalid email or password');
     } finally {
       setIsLoading(false);
     }
   };
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView 

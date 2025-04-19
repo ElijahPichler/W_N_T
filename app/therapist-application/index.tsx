@@ -24,10 +24,14 @@ const TherapistApplicationStep1: React.FC = () => {
   const [address, setAddress] = useState('');
   const [therapyType, setTherapyType] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
-
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    
+    if (!password) newErrors.password = 'Password is required';
+    else if (password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+
+    if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
     if (!firstName.trim()) newErrors.firstName = 'First name is required';
     if (!lastName.trim()) newErrors.lastName = 'Last name is required';
     if (!phone.trim()) newErrors.phone = 'Phone number is required';
@@ -53,7 +57,8 @@ const TherapistApplicationStep1: React.FC = () => {
         phone,
         email,
         address,
-        therapyType
+        therapyType,
+        password // Add password to params
       }
     });
   };
@@ -113,6 +118,23 @@ const TherapistApplicationStep1: React.FC = () => {
             keyboardType="email-address"
             autoCapitalize="none"
             error={errors.email}
+          />
+          <TextInput
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Create a password"
+            secureTextEntry
+            error={errors.password}
+          />
+
+          <TextInput
+            label="Confirm Password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder="Confirm your password"
+            secureTextEntry
+            error={errors.confirmPassword}
           />
 
           <TextInput

@@ -14,7 +14,16 @@ const NotificationBadge = ({ count }: { count: number }) => {
 };
 
 // Simple icon component since we don't have access to an icon library yet
-const Icon = ({ name, size = 24, color = Colors.white }) => {
+// Update the Icon component with proper type definitions
+const Icon = ({ 
+  name, 
+  size = 24, 
+  color = Colors.white 
+}: { 
+  name: string; 
+  size?: number; 
+  color?: string;
+}) => {
   // This is a placeholder for actual icons
   const getIconText = () => {
     switch (name) {
@@ -22,13 +31,14 @@ const Icon = ({ name, size = 24, color = Colors.white }) => {
         return '✉️';
       case 'help':
         return '❓';
-      case 'settings':
-        return '⚙️';
+      case 'logout':
+        return '🚪'; // Using a door emoji for logout
       default:
         return '●';
     }
   };
 
+ 
   return (
     <Text style={{ fontSize: size, color }}>{getIconText()}</Text>
   );
@@ -81,7 +91,7 @@ const HeaderNavigation: React.FC<HeaderNavigationProps> = ({
       {title && <Text style={styles.title}>{title}</Text>}
       
       <TouchableOpacity style={styles.rightIcon} onPress={onSettingsPress}>
-        <Icon name="settings" />
+        <Icon name="logout" />
       </TouchableOpacity>
     </View>
   );

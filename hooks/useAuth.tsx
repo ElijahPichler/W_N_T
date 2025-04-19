@@ -1,4 +1,13 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { 
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword, 
+  onAuthStateChanged,
+  signOut as firebaseSignOut,
+  UserCredential,
+  updateProfile
+} from 'firebase/auth';
+import { auth } from '../FirebaseConfig';
 
 // Define user types
 export type UserRole = 'client' | 'therapist' | 'partner' | null;
@@ -17,7 +26,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => void;
   signUp: (userData: Partial<User>, password: string) => Promise<void>;
-  createClientAccount: (userData: Partial<User>) => Promise<void>;
+  createClientAccount: (userData: Partial<User>, password: string) => Promise<void>; // Updated to include password
   createTherapistApplication: (userData: any) => Promise<void>;
   createPartnerApplication: (userData: any) => Promise<void>;
 }
@@ -34,36 +43,35 @@ const AuthContext = createContext<AuthContextType>({
   createPartnerApplication: async () => {},
 });
 
-// Mock user for demonstration
-const MOCK_USER: User = {
-  id: '1',
-  name: 'Test User',
-  email: 'test@example.com',
-  role: 'client',
-};
-
 // Provider component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for existing session on mount
+  // Listen for auth state changes
   useEffect(() => {
-    // Simulate checking for stored credentials
-    // In a real app, you would check AsyncStorage, SecureStore, etc.
-    const checkSession = async () => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       setIsLoading(true);
       
-      // PLACEHOLDER: Check for stored auth token or user data
-      // For now, we'll just set isLoading to false after a delay
-      setTimeout(() => {
-        setIsLoading(false);
-        // For testing, you can uncomment this to start with a logged-in user
-        // setUser(MOCK_USER);
-      }, 1000);
-    };
+      if (firebaseUser) {
+        // Convert Firebase user to our User type
+        const userObj: User = {
+          id: firebaseUser.uid,
+          name: firebaseUser.displayName || 'User',
+          email: firebaseUser.email || '',
+          role: (firebaseUser.displayName?.includes('Therapist') ? 'therapist' : 
+                firebaseUser.displayName?.includes('Partner') ? 'partner' : 'client') as UserRole,
+        };
+        setUser(userObj);
+      } else {
+        setUser(null);
+      }
+      
+      setIsLoading(false);
+    });
     
-    checkSession();
+    // Cleanup subscription
+    return () => unsubscribe();
   }, []);
 
   // Sign in function
@@ -71,39 +79,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     
     try {
-      // PLACEHOLDER: Authenticate with backend
-      // For now, we'll just simulate a successful login with mock data
-      setTimeout(() => {
-        setUser(MOCK_USER);
-        setIsLoading(false);
-      }, 1000);
-      
-      /* 
-      TODO: Real implementation will look something like:
-      const response = await api.post('/auth/login', { email, password });
-      const { user, token } = response.data;
-      
-      // Store token
-      await AsyncStorage.setItem('auth_token', token);
-      
-      // Set user state
-      setUser(user);
-      */
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      // Auth state change listener will handle setting the user
     } catch (error) {
+      console.error('Sign in error:', error);
       setIsLoading(false);
       throw error;
     }
   };
 
   // Sign out function
-  const signOut = () => {
-    // PLACEHOLDER: Clear auth state
-    setUser(null);
-    
-    /* 
-    TODO: Real implementation will look something like:
-    await AsyncStorage.removeItem('auth_token');
-    */
+  const signOut = async () => {
+    try {
+      await firebaseSignOut(auth);
+      // Auth state change listener will handle setting the user to null
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
 
   // Sign up function
@@ -111,87 +103,108 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(true);
     
     try {
-      // PLACEHOLDER: Register with backend
-      // For now, we'll just simulate a successful registration
-      setTimeout(() => {
-        setUser({
-          ...MOCK_USER,
-          ...userData,
+      const email = userData.email;
+      if (!email) throw new Error('Email is required');
+      
+      // Create user with email and password
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Update the user's profile with their name and other info
+      if (userCredential.user) {
+        await updateProfile(userCredential.user, {
+          displayName: userData.name,
         });
-        setIsLoading(false);
-      }, 1000);
+        
+        // TODO: Store additional user data (like role) in Firestore
+        // This would require adding Firebase Firestore
+        // const userDocRef = doc(db, 'users', userCredential.user.uid);
+        // await setDoc(userDocRef, {
+        //   ...userData,
+        //   createdAt: new Date()
+        // });
+      }
       
-      /* 
-      TODO: Real implementation will look something like:
-      const response = await api.post('/auth/register', { ...userData, password });
-      const { user, token } = response.data;
-      
-      // Store token
-      await AsyncStorage.setItem('auth_token', token);
-      
-      // Set user state
-      setUser(user);
-      */
+      // Auth state change listener will handle setting the user
     } catch (error) {
+      console.error('Sign up error:', error);
       setIsLoading(false);
       throw error;
     }
   };
 
   // Create client account
-  const createClientAccount = async (userData: Partial<User>) => {
-    return signUp({...userData, role: 'client'}, 'placeholder-password');
+  const createClientAccount = async (userData: Partial<User>, password: string) => {
+    return signUp({...userData, role: 'client'}, password);
   };
 
-  // Create therapist application
-  const createTherapistApplication = async (userData: any) => {
-    setIsLoading(true);
+  // Modify the createTherapistApplication function in useAuth.tsx
+const createTherapistApplication = async (userData: any) => {
+  setIsLoading(true);
+  
+  try {
+    // For therapist applications, we'd typically create a user account
+    // and then store additional application data
+    const email = userData.email;
+    const password = userData.password || 'therapist-temp-password'; // Use provided password if available
     
-    try {
-      // PLACEHOLDER: Submit therapist application
-      setTimeout(() => {
-        setUser({
-          ...MOCK_USER,
-          ...userData,
-          role: 'therapist',
-        });
-        setIsLoading(false);
-      }, 1000);
-      
-      /* 
-      TODO: Real implementation will submit the application to the backend
-      const response = await api.post('/therapist/apply', userData);
-      */
-    } catch (error) {
-      setIsLoading(false);
-      throw error;
+    await createUserWithEmailAndPassword(auth, email, password);
+    
+    // Update profile to include therapist role indicator
+    if (auth.currentUser) {
+      await updateProfile(auth.currentUser, {
+        displayName: `Therapist ${userData.firstName} ${userData.lastName}`,
+      });
     }
-  };
+    
+    // TODO: Store therapist application data in Firestore
+    // const applicationRef = doc(db, 'therapistApplications', auth.currentUser.uid);
+    // await setDoc(applicationRef, {
+    //   ...userData,
+    //   status: 'pending',
+    //   submittedAt: new Date()
+    // });
+    
+    setIsLoading(false);
+  } catch (error) {
+    console.error('Therapist application error:', error);
+    setIsLoading(false);
+    throw error;
+  }
+};
 
-  // Create partner application
-  const createPartnerApplication = async (userData: any) => {
-    setIsLoading(true);
+// Similarly update the createPartnerApplication function
+const createPartnerApplication = async (userData: any) => {
+  setIsLoading(true);
+  
+  try {
+    // Similar to therapist, create account and store application data
+    const email = userData.email;
+    const password = userData.password || 'partner-temp-password'; // Use provided password if available
     
-    try {
-      // PLACEHOLDER: Submit partner application
-      setTimeout(() => {
-        setUser({
-          ...MOCK_USER,
-          ...userData,
-          role: 'partner',
-        });
-        setIsLoading(false);
-      }, 1000);
-      
-      /* 
-      TODO: Real implementation will submit the application to the backend
-      const response = await api.post('/partner/apply', userData);
-      */
-    } catch (error) {
-      setIsLoading(false);
-      throw error;
+    await createUserWithEmailAndPassword(auth, email, password);
+    
+    // Update profile to include partner role indicator
+    if (auth.currentUser) {
+      await updateProfile(auth.currentUser, {
+        displayName: `Partner ${userData.businessName}`,
+      });
     }
-  };
+    
+    // TODO: Store partner application data in Firestore
+    // const applicationRef = doc(db, 'partnerApplications', auth.currentUser.uid);
+    // await setDoc(applicationRef, {
+    //   ...userData,
+    //   status: 'pending',
+    //   submittedAt: new Date()
+    // });
+    
+    setIsLoading(false);
+  } catch (error) {
+    console.error('Partner application error:', error);
+    setIsLoading(false);
+    throw error;
+  }
+};
 
   return (
     <AuthContext.Provider

@@ -14,6 +14,8 @@ const ClientSignupScreen: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [birthdate, setBirthdate] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -28,6 +30,20 @@ const ClientSignupScreen: React.FC = () => {
       newErrors.email = 'Please enter a valid email';
     }
     if (!birthdate.trim()) newErrors.birthdate = 'Birthdate is required';
+    
+    // Password validation
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    // Confirm password validation
+    if (!confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (password !== confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
     
     // Simple date validation (MM/DD/YYYY format check)
     if (birthdate.trim() && !/^\d{2}\/\d{2}\/\d{4}$/.test(birthdate)) {
@@ -68,19 +84,27 @@ const ClientSignupScreen: React.FC = () => {
       await createClientAccount({
         name: `${firstName} ${lastName}`,
         email,
+        role: 'client',
         // Other fields would be included in a real implementation
-      });
+      }, password);
       
-      // Navigate to client home screen
-      // In a real app, this navigation would happen automatically
-      // based on the auth state change
+      // Navigation will be handled by the auth state change in _layout.tsx
+      // This is just a placeholder for now
       router.replace('/client/home');
       
-    } catch (error) {
-      Alert.alert(
-        'Error',
-        'There was an error creating your account. Please try again.'
-      );
+    } catch (error: any) {
+      const errorCode = error.code || '';
+      let errorMessage = 'There was an error creating your account. Please try again.';
+      
+      if (errorCode === 'auth/email-already-in-use') {
+        errorMessage = 'This email is already in use. Please use another email or login.';
+      } else if (errorCode === 'auth/invalid-email') {
+        errorMessage = 'The email address is not valid.';
+      } else if (errorCode === 'auth/weak-password') {
+        errorMessage = 'The password is too weak. Please choose a stronger password.';
+      }
+      
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -131,6 +155,24 @@ const ClientSignupScreen: React.FC = () => {
             keyboardType="email-address"
             autoCapitalize="none"
             error={errors.email}
+          />
+
+          <TextInput
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            placeholder="Create a password"
+            secureTextEntry
+            error={errors.password}
+          />
+
+          <TextInput
+            label="Confirm Password"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            placeholder="Confirm your password"
+            secureTextEntry
+            error={errors.confirmPassword}
           />
 
           <TextInput
